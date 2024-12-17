@@ -11,13 +11,36 @@ This worker:
 
 ## Prerequisites
 
-- Go 1.21 or later
 - AWS credentials configured
 - GCP credentials configured
 - Access to AWS SWF
 - Access to GCP BigQuery
 
 ## Installation
+
+### Using Docker
+
+The worker is available as a Docker image from GitHub Container Registry:
+
+```bash
+# Pull the latest version
+docker pull ghcr.io/ewjoachim/swfbq:latest
+
+# Or a specific version
+docker pull ghcr.io/ewjoachim/swfbq:v1.0.0
+
+# Run with required configuration
+docker run \
+    -e AWS_ACCESS_KEY_ID=your_key \
+    -e AWS_SECRET_ACCESS_KEY=your_secret \
+    -e GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json \
+    -v /path/to/your/credentials.json:/app/credentials.json:ro \
+    ghcr.io/ewjoachim/swfbq:latest \
+    -domain your-domain \
+    -task-list your-tasklist
+```
+
+### From Source
 
 ```bash
 git clone github.com/ewjoachim/swfbq
@@ -27,11 +50,23 @@ go mod download
 
 ## Configuration
 
-The application uses environment variables for configuration:
+The application uses environment variables and command-line flags for configuration:
+
+### Environment Variables
 
 ```bash
-export SWF_DOMAIN="your-swf-domain"
-export SWF_TASK_LIST="your-task-list"
+# AWS Authentication (if not using IAM roles)
+export AWS_ACCESS_KEY_ID="your-key"
+export AWS_SECRET_ACCESS_KEY="your-secret"
+
+# GCP Authentication
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/credentials.json"
+```
+
+### Command-line Flags
+
+```bash
+swfbq -domain your-domain -task-list your-tasklist [-debug]
 ```
 
 ### AWS Authentication
@@ -48,15 +83,7 @@ The worker uses Google Cloud's Application Default Credentials. You can authenti
 - Using GCP workload identity
 - Running on GCP infrastructure with appropriate service account
 
-## Usage
-
-### Running the Worker
-
-```bash
-go run main.go
-```
-
-### Job Format
+## Job Format
 
 Jobs should be submitted to SWF in the following JSON format:
 
@@ -124,42 +151,3 @@ All errors are:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## CLI Usage
-
-The worker can be run using the command-line interface:
-
-```bash
-swfbq -domain my-domain -task-list my-tasklist [-debug]
-```
-
-Options:
-- `-domain`: SWF domain (required if SWF_DOMAIN not set)
-- `-task-list`: SWF task list (required if SWF_TASK_LIST not set)
-- `-debug`: Enable debug logging
-
-Environment variables:
-- `SWF_DOMAIN`: Default SWF domain
-- `SWF_TASK_LIST`: Default SWF task list
-
-## Building from Source
-
-Build for your current platform:
-
-```bash
-make build
-```
-```bash
-make build-all
-```
-```bash
-sudo make install
-```
-
-## Pre-built Binaries
-
-Pre-built binaries are available for:
-- Linux (amd64, arm64)
-- macOS (amd64, arm64)
-
-Download the appropriate binary for your system from the releases page.
