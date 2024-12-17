@@ -49,6 +49,7 @@ func main() {
 		bqClient,
 		cfg.Domain,
 		cfg.TaskList,
+		cfg.MaxWorkers,
 		logger,
 	)
 

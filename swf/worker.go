@@ -25,8 +25,7 @@ type Worker struct {
 	workerWg   sync.WaitGroup
 }
 
-func NewWorker(swfClient *swf.Client, bqClient *bigquery.Client, domain, taskList string, logger *zap.Logger) *Worker {
-	const maxWorkers = 10 // Maximum number of concurrent queries
+func NewWorker(swfClient *swf.Client, bqClient *bigquery.Client, domain, taskList string, maxWorkers int, logger *zap.Logger) *Worker {
 	return &Worker{
 		swfClient:  swfClient,
 		bqClient:   bqClient,
