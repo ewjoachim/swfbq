@@ -115,6 +115,7 @@ The worker will complete the task with a result in the following format:
     "bytes_processed": 1024
 }
 ```
+Note that the `sql_query` field is truncated to 1000 characters.
 
 ## Project Structure
 

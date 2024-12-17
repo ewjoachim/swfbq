@@ -101,30 +101,45 @@ func (w *Worker) pollAndProcessTask(ctx context.Context, worker struct{}) error 
 	return nil
 }
 
+func (w *Worker) marshalJob(job *models.Job) (string, error) {
+	if job == nil {
+		return "", nil
+	}
+	// Create a copy to truncate SQL if needed
+	resultJob := *job
+	if len(resultJob.SQLQuery) > 1000 {
+		resultJob.SQLQuery = resultJob.SQLQuery[:997] + "..."
+	}
+	result, err := json.Marshal(&resultJob)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal job: %v", err)
+	}
+	return string(result), nil
+}
+
 func (w *Worker) completeTask(ctx context.Context, taskToken *string, job *models.Job, err error) error {
 	if err != nil {
 		failInput := &swf.RespondActivityTaskFailedInput{
 			TaskToken: taskToken,
 			Reason:    aws.String(err.Error()),
 		}
+		if details, err := w.marshalJob(job); err != nil {
+			w.logger.Error("Failed to marshal job details", zap.Error(err))
+		} else if details != "" {
+			failInput.Details = aws.String(details)
+		}
 		_, err := w.swfClient.RespondActivityTaskFailed(ctx, failInput)
 		return err
 	}
 
-	// Create a copy of the job to avoid modifying the original
-	resultJob := *job
-	if len(resultJob.SQLQuery) > 1000 {
-		resultJob.SQLQuery = resultJob.SQLQuery[:997] + "..."
-	}
-
-	result, err := json.Marshal(&resultJob)
+	result, err := w.marshalJob(job)
 	if err != nil {
 		return fmt.Errorf("failed to marshal result: %v", err)
 	}
 
 	completeInput := &swf.RespondActivityTaskCompletedInput{
 		TaskToken: taskToken,
-		Result:    aws.String(string(result)),
+		Result:    aws.String(result),
 	}
 	_, err = w.swfClient.RespondActivityTaskCompleted(ctx, completeInput)
 	return err
